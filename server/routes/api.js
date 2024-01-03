@@ -3,8 +3,16 @@ const router = express.Router()
 const Expense = require('../model/Expense')
 const moment = require('moment')
 
-router.get('/expense', function (req, res) {
-    Expense.find({}).sort({date: -1}).then( function (expenses) {
+router.get('/expenses', function (req, res) {
+    let d1 = moment(req.query.d1).format('YYYY-MM-DD') || moment('9999-99-99')
+    let d2 = moment(req.query.d2).format('YYYY-MM-DD') || moment('0000-00-00')
+    Expense.find({
+        $and:[
+        {date: {$gt: d1}},
+        {date: {$lt: d2}}
+    
+    ]
+    }).sort({"date": -1}).then( function (expenses) {
         res.send(expenses)
     })
 })
@@ -15,7 +23,6 @@ const count_expenses = function(expenses){
     })
     return count
 }
-
 router.get('/expenses/:group/:total', function (req, res) {
     total = req.params.total
     Expense.find({'group': req.params.group}).then( function (expenses) {
