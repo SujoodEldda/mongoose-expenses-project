@@ -2,10 +2,10 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
 const expenseSchema = new Schema({
-    item : string,
+    item : String,
     amount : Number,
-    date:  date,
-    group: string
+    date:  Date,
+    group: String
 })
 
 const Expense = mongoose.model("expense", expenseSchema)
