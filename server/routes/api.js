@@ -2,35 +2,32 @@ const express = require('express')
 const router = express.Router()
 const Expense = require('../model/Expense')
 const moment = require('moment')
+const count_expenses = require('../../utilities')
 
-router.get('/expenses', function (req, res) {
-    let d1 = moment(req.query.d1).format('YYYY-MM-DD') || moment('9999-99-99')
-    let d2 = moment(req.query.d2).format('YYYY-MM-DD') || moment('0000-00-00')
-    Expense.find({
+router.get('/expenses',async function (req, res) {
+    const biggestData = new Date('9999-12-31T23:59:59.999Z').toISOString().slice(0, 10)
+    const smallestData = new Date('0000-01-01T00:00:00.000Z').toISOString().slice(0, 10)
+    let d1 = req.query.d1 ? moment(req.query.d1).format('YYYY-MM-DD') : biggestData
+    let d2 = req.query.d2 ? moment(req.query.d2).format('YYYY-MM-DD') : smallestData
+    
+    const expenses = await Expense.find({
         $and:[
-        {date: {$gt: d1}},
-        {date: {$lt: d2}}
+        {date: {$lt: d1}},
+        {date: {$gt: d2}}
     
     ]
-    }).sort({"date": -1}).then( function (expenses) {
-        res.send(expenses)
-    })
+    }).sort({"date": -1})
+    res.send(expenses)
+
 })
-const count_expenses = function(expenses){
-    count = 0
-    expenses.forEach(element => {
-        count+=element.amount
-    })
-    return count
-}
-router.get('/expenses/:group/:total', function (req, res) {
+
+router.get('/expenses/:group/:total', async function (req, res) {
     total = req.params.total
-    Expense.find({'group': req.params.group}).then( function (expenses) {
-        if(total=="true")
-             res.send(`the total is ${count_expenses(expenses)}`)
-        else
-            res.send(expenses)
-    })
+    const expenses = await Expense.find({'group': req.params.group})
+    if(total=="true")
+      res.send(`the total is ${count_expenses(expenses)}`)
+    else
+      res.send(expenses)
 })
 
 router.post('/expense',function(req,res){
@@ -42,27 +39,24 @@ router.post('/expense',function(req,res){
     res.end()
 })
 
-router.put('/update/:id',function(req,res){
+router.put('/update/:id',async function(req,res){
     const { id } = req.params;
     const { group1, group2 } = req.body
-    Expense.findByIdAndUpdate(
-        id,
-        { $set: { group: group2 } },
-        { new: true })
-        .then(
-        (updatedExpense) => {
+    const updatedExpense = await Expense.findByIdAndUpdate(
+      { _id: id, group: group1 },
+      { $set: { group: group2 } })
 
-          if (!updatedExpense) {
-            return res.status(404).send(`Expense not found for ID ${id}`);
-          }
-    
-          if (updatedExpense.group === group1) {
-            res.send(`Expense "${updatedExpense.name}" updated. Group changed from "${group1}" to "${group2}"`);
-          } else {
-            res.status(400).send(`Expense found, but it does not belong to group ${group1}`);
-          }
-        }
-      )
+    if (!updatedExpense) {
+      return res.status(404).send(`Expense not found for ID ${id}`);
+    }
+
+    if (updatedExpense.group === group1) {
+      console.log(updatedExpense)
+      res.send(`Expense "${updatedExpense.item}" updated. Group changed from "${group1}" to "${group2}"`);
+    } else {
+      console.log(updatedExpense)
+      res.status(400).send(`Expense found, but it does not belong to group ${group1}`);
+    }
 })
 
 
